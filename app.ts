@@ -1,5 +1,10 @@
 ﻿
-interface opcodePlusTranslator { name: string, translator?(number) : string };
+interface opcodePlusTranslator {
+    name: string,
+    translator?(n: number): string,
+    fullTranslator?(numArguments: number, code1: number, code2?: number, code3?: number): string,
+    classPicker?(numArguments?: number, code1?: number, code2?: number, code3?: number): string,
+};
 
 class Greeter {
     timerToken: number;
@@ -80,24 +85,41 @@ class Greeter {
 
     translatePhrase(opcode: number, numArguments: number, arg1: number, arg2: number, arg3: number): HTMLElement {
         var elementDiv = document.createElement('div');
-        if (opcode < 16) {
+        var opCodeTranslation = this.opcodeToName(opcode);
+        if (opCodeTranslation.classPicker) {
+            elementDiv.className = opCodeTranslation.classPicker(numArguments, arg1, arg2, arg3);
+        }
+        else if (opcode < 16) {
             elementDiv.className = 'error';
         }
         else {
             elementDiv.className = 'info';
         }
-        var opCodeTranslation = this.opcodeToName(opcode);
         var content = opCodeTranslation.name + "(";
-        if (arg1 >= 0) {
-            content += opCodeTranslation.translator ? opCodeTranslation.translator(arg1) : arg1.toString();
+        if (opCodeTranslation.fullTranslator) {
+            content += opCodeTranslation.fullTranslator(numArguments, arg1, arg2, arg3);
         }
-        if (arg2 >= 0) {
-            content += ',';
-            content += (opCodeTranslation.translator ? opCodeTranslation.translator(arg2) : arg2.toString());
+        else if (opCodeTranslation.translator) {
+            if (arg1 >= 0) {
+                content += opCodeTranslation.translator(arg1);
+            }
+            if (arg2 >= 0) {
+                content += ',' + opCodeTranslation.translator(arg2);
+            }
+            if (arg3 >= 0) {
+                content += ',' + opCodeTranslation.translator(arg3);
+            }
         }
-        if (arg3 >= 0) {
-            content += ',';
-            content += (opCodeTranslation.translator ? opCodeTranslation.translator(arg3) : arg3.toString());
+        else {
+            if (arg1 >= 0) {
+                content += arg1.toString();
+            }
+            if (arg2 >= 0) {
+                content += ',' + arg2.toString();
+            }
+            if (arg3 >= 0) {
+                content += ',' + arg3.toString();
+            }
         }
         content += ')';
         elementDiv.innerHTML = content;
@@ -106,28 +128,47 @@ class Greeter {
 
     opcodeToName(opcode: number): opcodePlusTranslator {
         switch (opcode) {
-            case 0: return { name: 'packetDidNotStartWithZero' };
-            case 1: return { name: 'parityError' };
-            case 2: return { name: 'packetDidNotEndWithOne' };
-            case 3: return { name: 'packetIncomplete' };
-            case 4: return { name: 'sendFrameError' };
-            case 5: return { name: 'bufferOverflow' };
-            case 6: return { name: 'incorrectResponse', translator: this.ps2CodeToString };
-            case 7: return { name: 'noResponse', translator: this.ps2CodeToString };
-            case 8: return { name: 'noTranslationForKey', translator: this.ps2CodeToString };
-            case 9: return { name: 'startupFailure' };
+            case 0: return { name: 'ps2:packetDidNotStartWithZero' };
+            case 1: return { name: 'ps2:parityError' };
+            case 2: return { name: 'ps2:packetDidNotEndWithOne' };
+            case 3: return { name: 'ps2:packetIncomplete' };
+            case 4: return { name: 'ps2:sendFrameError' };
+            case 5: return { name: 'ps2:bufferOverflow' };
+            case 6: return { name: 'ps2:incorrectResponse', translator: this.ps2CodeToString };
+            case 7: return { name: 'ps2:noResponse', translator: this.ps2CodeToString };
+            case 8: return { name: 'ps2:noTranslationForKey', translator: this.ps2CodeToString };
+            case 9: return { name: 'ps2:startupFailure' };
 
-            case 16: return { name: 'sentByte', translator: this.ps2CommandToString };
-            case 17: return { name: 'receivedByte', translator: this.ps2CodeToString };
+            case 16: return { name: 'ps2:sentByte', translator: this.ps2CommandToString };
+            case 17: return { name: 'ps2:receivedByte', translator: this.ps2CodeToString };
+            case 18: return { name: 'diag:pause', fullTranslator: this.shortPauseArg, classPicker: this.pauseClassPicker };
 
-            case 18: return { name: 'shortPause', translator: this.ps2CommandToString };
-            case 19: return { name: 'longPause', translator: this.ps2CodeToString };
-
-            case 24: return { name: 'sentUsbKeyDown',  translator: this.usbScanCodeToString };
-            case 25: return { name: 'sentUsbKeyUp', translator: this.usbScanCodeToString };
+            case 22: return { name: 'usb:sentUsbKeyDown',  translator: this.usbScanCodeToString };
+            case 23: return { name: 'usb:sentUsbKeyUp', translator: this.usbScanCodeToString };
             default: return { name: '?' + opcode.toString() + '?' };
         }
     }
+
+    pauseClassPicker(numBytes: number, time1: number, time2: number): string {
+        if (numBytes == 1 && time1 == 1) {
+            return "tinyPause";
+        }
+        else if (numBytes == 1) {
+            return "smallPause";
+        }
+        else {
+            return "bigPause";
+        }
+    }
+
+    shortPauseArg(numBytes: number, time1: number, time2: number): string {
+        if (numBytes == 1) {
+            return (time1 * 8).toString() + "ms";
+        }
+        else {
+            return (((time1 * 256 + time2) * 64) / 1000).toString() + "sec";
+        }
+    };
 
     ps2CommandToString(command: number): string {
         switch (command) {
