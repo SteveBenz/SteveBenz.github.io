@@ -92,10 +92,12 @@ class Greeter {
             content += opCodeTranslation.translator ? opCodeTranslation.translator(arg1) : arg1.toString();
         }
         if (arg2 >= 0) {
-            content += ',' + opCodeTranslation.translator ? opCodeTranslation.translator(arg2) : arg2.toString();
+            content += ',';
+            content += (opCodeTranslation.translator ? opCodeTranslation.translator(arg2) : arg2.toString());
         }
         if (arg3 >= 0) {
-            content += ',' + opCodeTranslation.translator ? opCodeTranslation.translator(arg3) : arg3.toString();
+            content += ',';
+            content += (opCodeTranslation.translator ? opCodeTranslation.translator(arg3) : arg3.toString());
         }
         content += ')';
         elementDiv.innerHTML = content;
@@ -118,8 +120,11 @@ class Greeter {
             case 16: return { name: 'sentByte', translator: this.ps2CommandToString };
             case 17: return { name: 'receivedByte', translator: this.ps2CodeToString };
 
-            case 18: return { name: 'sentUsbKeyDown',  translator: this.usbScanCodeToString };
-            case 19: return { name: 'sentUsbKeyUp', translator: this.usbScanCodeToString };
+            case 18: return { name: 'shortPause', translator: this.ps2CommandToString };
+            case 19: return { name: 'longPause', translator: this.ps2CodeToString };
+
+            case 24: return { name: 'sentUsbKeyDown',  translator: this.usbScanCodeToString };
+            case 25: return { name: 'sentUsbKeyUp', translator: this.usbScanCodeToString };
             default: return { name: '?' + opcode.toString() + '?' };
         }
     }
