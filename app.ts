@@ -95,7 +95,7 @@ class Greeter {
         else {
             elementDiv.className = 'info';
         }
-        var content = opCodeTranslation.name + "(";
+        var content = opCodeTranslation.name + " ";
         if (opCodeTranslation.fullTranslator) {
             content += opCodeTranslation.fullTranslator(numArguments, arg1, arg2, arg3);
         }
@@ -104,10 +104,10 @@ class Greeter {
                 content += opCodeTranslation.translator(arg1);
             }
             if (arg2 >= 0) {
-                content += ',' + opCodeTranslation.translator(arg2);
+                content += ' ' + opCodeTranslation.translator(arg2);
             }
             if (arg3 >= 0) {
-                content += ',' + opCodeTranslation.translator(arg3);
+                content += ' ' + opCodeTranslation.translator(arg3);
             }
         }
         else {
@@ -115,58 +115,69 @@ class Greeter {
                 content += arg1.toString();
             }
             if (arg2 >= 0) {
-                content += ',' + arg2.toString();
+                content += ' ' + arg2.toString();
             }
             if (arg3 >= 0) {
-                content += ',' + arg3.toString();
+                content += ' ' + arg3.toString();
             }
         }
-        content += ')';
         elementDiv.innerHTML = content;
         return elementDiv;
     }
 
     opcodeToName(opcode: number): opcodePlusTranslator {
         switch (opcode) {
-            case 0: return { name: 'ps2:packetDidNotStartWithZero' };
-            case 1: return { name: 'ps2:parityError' };
-            case 2: return { name: 'ps2:packetDidNotEndWithOne' };
-            case 3: return { name: 'ps2:packetIncomplete' };
-            case 4: return { name: 'ps2:sendFrameError' };
-            case 5: return { name: 'ps2:bufferOverflow' };
-            case 6: return { name: 'ps2:incorrectResponse', translator: this.ps2CodeToString };
-            case 7: return { name: 'ps2:noResponse', translator: this.ps2CodeToString };
-            case 8: return { name: 'ps2:noTranslationForKey', translator: this.ps2CodeToString };
-            case 9: return { name: 'ps2:startupFailure' };
+            case 0: return { name: 'ps2:packetDidNotStartWithZero', classPicker: this.ps2ErrorClassPicker };
+            case 1: return { name: 'ps2:parityError', classPicker: this.ps2ErrorClassPicker };
+            case 2: return { name: 'ps2:packetDidNotEndWithOne', classPicker: this.ps2ErrorClassPicker };
+            case 3: return { name: 'ps2:packetIncomplete', classPicker: this.ps2ErrorClassPicker };
+            case 4: return { name: 'ps2:sendFrameError', classPicker: this.ps2ErrorClassPicker };
+            case 5: return { name: 'ps2:bufferOverflow', classPicker: this.ps2ErrorClassPicker };
+            case 6: return { name: 'ps2:incorrectResponse', translator: this.ps2CodeToString, classPicker: this.ps2ErrorClassPicker };
+            case 7: return { name: 'ps2:noResponse', translator: this.ps2CodeToString, classPicker: this.ps2ErrorClassPicker };
+            case 8: return { name: 'ps2:noTranslationForKey', translator: this.ps2CodeToString, classPicker: this.ps2ErrorClassPicker };
+            case 9: return { name: 'ps2:startupFailure', classPicker: this.ps2ErrorClassPicker };
 
-            case 16: return { name: 'ps2:sentByte', translator: this.ps2CommandToString };
-            case 17: return { name: 'ps2:receivedByte', translator: this.ps2CodeToString };
-            case 18: return { name: 'diag:pause', fullTranslator: this.shortPauseArg, classPicker: this.pauseClassPicker };
+            case 16: return { name: '&rarr;', translator: this.ps2CommandToString, classPicker: this.ps2InfoClassPicker };
+            case 17: return { name: '&larr;', translator: this.ps2CodeToString, classPicker: this.ps2InfoClassPicker };
+            case 18: return { name: '', fullTranslator: this.shortPauseArg, classPicker: this.pauseClassPicker };
 
-            case 22: return { name: 'usb:sentUsbKeyDown',  translator: this.usbScanCodeToString };
-            case 23: return { name: 'usb:sentUsbKeyUp', translator: this.usbScanCodeToString };
+            case 22: return { name: '&darr;', translator: this.usbScanCodeToString, classPicker: this.usbInfoClassPicker };
+            case 23: return { name: '&uarr;', translator: this.usbScanCodeToString, classPicker: this.usbInfoClassPicker };
             default: return { name: '?' + opcode.toString() + '?' };
         }
     }
 
+    ps2ErrorClassPicker(numBytes: number, time1: number, time2: number): string {
+        return "ps2 error";
+    }
+
+    ps2InfoClassPicker(numBytes: number, time1: number, time2: number): string {
+        return "ps2 info";
+    }
+
+    usbInfoClassPicker(numBytes: number, time1: number, time2: number): string {
+        return "usb info";
+    }
+
     pauseClassPicker(numBytes: number, time1: number, time2: number): string {
         if (numBytes == 1 && time1 == 1) {
-            return "tinyPause";
+            return "diag tinyPause";
         }
         else if (numBytes == 1) {
-            return "smallPause";
+            return "diag smallPause";
         }
         else {
-            return "bigPause";
+            return "diag bigPause";
         }
     }
 
     shortPauseArg(numBytes: number, time1: number, time2: number): string {
         if (numBytes == 1) {
-            return (time1 * 8).toString() + "ms";
+            return "<" + (time1 * 8).toString() + "ms" + ">";
         }
         else {
-            return (((time1 * 256 + time2) * 64) / 1000).toString() + "sec";
+            return "<" + (((time1 * 256 + time2) * 64) / 1000).toString() + "sec" + ">";
         }
     };
 
