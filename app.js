@@ -9,7 +9,7 @@ var Greeter = (function () {
             return;
         }
         var myContent = document.getElementById('mycontent');
-        var regexData = newText.match(/^{([a-f0-9]+)\:([a-f0-9]*)}$/i);
+        var regexData = newText.match(/^{([a-f0-9]+)\:([a-f0-9]*)\|([a-f0-9]*)}$/i);
         if (regexData == null) {
             var helpText = document.createElement('div');
             helpText.className = 'helpText';
@@ -18,11 +18,8 @@ var Greeter = (function () {
         }
         else {
             var errorFlags = parseInt(regexData[1], 16);
-            var bytes = regexData[2];
-            var a = new Uint8Array((bytes.length) / 2);
-            for (var i = 0; i < bytes.length; i += 2) {
-                a[i / 2] = parseInt(bytes.substring(i, i + 2), 16);
-            }
+            var errorBytes = regexData[2];
+            var bytes = regexData[3];
             var div = document.createElement('div');
             if (errorFlags == 0) {
                 var noErrors = document.createElement('div');
@@ -45,23 +42,45 @@ var Greeter = (function () {
                 errors.innerText = errorText;
                 div.appendChild(errors);
             }
-            var i = a.length - 1;
-            while (i > 0) {
-                var opCode = a[i] >> 2;
-                var numArguments = a[i] & 3;
-                if (i - numArguments < 0) {
-                    break;
-                }
-                var arg1 = numArguments >= 1 ? a[i - 1] : -1;
-                var arg2 = numArguments >= 2 ? a[i - 2] : -1;
-                var arg3 = numArguments >= 3 ? a[i - 3] : -1;
-                i -= 1 + numArguments;
-                var content = this.translatePhrase(opCode, numArguments, arg1, arg2, arg3);
-                div.appendChild(content);
+            var errorLog;
+            if (errorBytes.length == 0) {
+                errorLog = document.createElement("div");
+                errorLog.innerText = "no errors reported";
+                errorLog.className = "errorLog emptyErrorLog";
             }
+            else {
+                errorLog = this.translateBytes(errorBytes);
+                errorLog.className = "errorLog";
+            }
+            div.appendChild(errorLog);
+            var fullLog = this.translateBytes(bytes);
+            fullLog.className = "fullLog";
+            div.appendChild(fullLog);
             document.getElementById('mycontent').innerHTML = div.outerHTML;
         }
         this.lastDiagnosticBlock = newText;
+    };
+    Greeter.prototype.translateBytes = function (bytes) {
+        var div = document.createElement('div');
+        var a = new Uint8Array((bytes.length) / 2);
+        for (var i = 0; i < bytes.length; i += 2) {
+            a[i / 2] = parseInt(bytes.substring(i, i + 2), 16);
+        }
+        var i = a.length - 1;
+        while (i > 0) {
+            var opCode = a[i] >> 2;
+            var numArguments = a[i] & 3;
+            if (i - numArguments < 0) {
+                break;
+            }
+            var arg1 = numArguments >= 1 ? a[i - 1] : -1;
+            var arg2 = numArguments >= 2 ? a[i - 2] : -1;
+            var arg3 = numArguments >= 3 ? a[i - 3] : -1;
+            i -= 1 + numArguments;
+            var content = this.translatePhrase(opCode, numArguments, arg1, arg2, arg3);
+            div.appendChild(content);
+        }
+        return div;
     };
     Greeter.prototype.translatePhrase = function (opcode, numArguments, arg1, arg2, arg3) {
         var elementDiv = document.createElement('div');

@@ -22,7 +22,7 @@ class Greeter {
         }
 
         var myContent = document.getElementById('mycontent');
-        var regexData = newText.match(/^{([a-f0-9]+)\:([a-f0-9]*)}$/i);
+        var regexData = newText.match(/^{([a-f0-9]+)\:([a-f0-9]*)\|([a-f0-9]*)}$/i);
         if (regexData == null) {
             var helpText = document.createElement('div');
             helpText.className = 'helpText';
@@ -31,11 +31,8 @@ class Greeter {
         }
         else {
             var errorFlags = parseInt(regexData[1], 16);
-            var bytes = regexData[2];
-            var a = new Uint8Array((bytes.length) / 2);
-            for (var i = 0; i < bytes.length; i += 2) {
-                a[i/2] = parseInt(bytes.substring(i, i + 2), 16);
-            }
+            var errorBytes = regexData[2];
+            var bytes = regexData[3];
 
             var div = document.createElement('div');
 
@@ -61,26 +58,52 @@ class Greeter {
                 div.appendChild(errors);
             }
 
-            var i = a.length - 1;
-            while (i > 0) {
-                var opCode = a[i] >> 2;
-                var numArguments = a[i] & 3;
-                if (i - numArguments < 0) {
-                    break;
-                }
-
-                var arg1 = numArguments >= 1 ? a[i-1] : -1;
-                var arg2 = numArguments >= 2 ? a[i-2] : -1;
-                var arg3 = numArguments >= 3 ? a[i-3] : -1;
-                i -= 1+numArguments;
-
-                var content = this.translatePhrase(opCode, numArguments, arg1, arg2, arg3);
-                div.appendChild(content);
+            var errorLog: HTMLElement;
+            if (errorBytes.length == 0) {
+                errorLog = document.createElement("div");
+                errorLog.innerText = "no errors reported";
+                errorLog.className = "errorLog emptyErrorLog";
             }
+            else {
+                errorLog = this.translateBytes(errorBytes);
+                errorLog.className = "errorLog";
+            }
+            div.appendChild(errorLog);
+            var fullLog = this.translateBytes(bytes);
+            fullLog.className = "fullLog";
+            div.appendChild(fullLog);
 
             document.getElementById('mycontent').innerHTML = div.outerHTML;
         }
         this.lastDiagnosticBlock = newText;
+    }
+
+    translateBytes(bytes: string) : HTMLElement {
+        var div = document.createElement('div');
+
+        var a = new Uint8Array((bytes.length) / 2);
+        for (var i = 0; i < bytes.length; i += 2) {
+            a[i / 2] = parseInt(bytes.substring(i, i + 2), 16);
+        }
+
+        var i = a.length - 1;
+        while (i > 0) {
+            var opCode = a[i] >> 2;
+            var numArguments = a[i] & 3;
+            if (i - numArguments < 0) {
+                break;
+            }
+
+            var arg1 = numArguments >= 1 ? a[i - 1] : -1;
+            var arg2 = numArguments >= 2 ? a[i - 2] : -1;
+            var arg3 = numArguments >= 3 ? a[i - 3] : -1;
+            i -= 1 + numArguments;
+
+            var content = this.translatePhrase(opCode, numArguments, arg1, arg2, arg3);
+            div.appendChild(content);
+        }
+
+        return div;
     }
 
     translatePhrase(opcode: number, numArguments: number, arg1: number, arg2: number, arg3: number): HTMLElement {
