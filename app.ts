@@ -164,6 +164,7 @@ class Greeter {
             case 16: return { name: '&rarr;', translator: this.ps2CommandToString, classPicker: this.ps2InfoClassPicker };
             case 17: return { name: '&larr;', translator: this.ps2CodeToString, classPicker: this.ps2InfoClassPicker };
             case 18: return { name: '', fullTranslator: this.shortPauseArg, classPicker: this.pauseClassPicker };
+            case 19: return { name: 'clockGlitch', translator: this.toNumber };
 
             case 22: return { name: '&darr;', translator: this.usbScanCodeToString, classPicker: this.usbInfoClassPicker };
             case 23: return { name: '&uarr;', translator: this.usbScanCodeToString, classPicker: this.usbInfoClassPicker };
@@ -369,6 +370,10 @@ class Greeter {
             case 0xE7: return 'Right Win';
             default: return "?" + scancode.toString() + "?";
         }
+    }
+
+    toNumber(num: number): string {
+        return num.toString() + " bits received";
     }
 
     ps2CodeToString(scancode: number): string {
